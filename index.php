@@ -11,7 +11,7 @@ session_start();
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="">
 
 <?php require_once 'sectionHead.php' ?>
 

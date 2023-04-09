@@ -1,30 +1,38 @@
 <?php
-// TODO 1: PREPARING ENVIRONMENT: 1) session 2) functions
+
 session_start();
 
-// TODO 2: ROUTING
-
-// TODO 3: CODE by REQUEST METHODS (ACTIONS) GET, POST, etc. (handle data from request): 1) validate 2) working with data source 3) transforming data
-
 // проверка наличия данных в $_POST
-if (isset($_POST['email']) && isset($_POST['name']) && isset($_POST['text'])) {
-    $email = $_POST['email'];
-    $name = $_POST['name'];
-    $text = $_POST['text'];
-
-    // Валидация данных
-
-    $data = array(
-        'email' => $email,
-        'name' => $name,
-        'text' => $text
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $aComment = array(
+        'email' => $_POST['email'],
+        'name' => $_POST['name'],
+        'text' => $_POST['text'],
+        'date' => date('Y-m-d H:i:s')
     );
 
-    $jsonString = json_encode($data);
+    // Вставка данных в базу данных
+    // TODO in PHP part
+    $aConfig = require_once 'config.php';
+    $db = mysqli_connect(
+        $aConfig['host'],
+        $aConfig['user'],
+        $aConfig['pass'],
+        $aConfig['name']
+    );
 
-    $file = fopen('comments.csv', 'a');
-    fwrite($file, $jsonString . "\n");
-    fclose($file);
+    $query = "INSERT INTO comments (email, name, text, date) VALUES (
+        '". $aComment['email']."',
+        '". $aComment['name']."',
+        '". $aComment['text']."',
+        '". $aComment['date']."'
+)";
+    mysqli_query($db, $query);
+    mysqli_close($db);
+
+    // Перенаправление на страницу после успешной вставки данных
+    header('Location: guestbook.php');
+    exit();
 }
 
 // TODO 4: RENDER: 1) view (html) 2) data (from php)
@@ -32,7 +40,7 @@ if (isset($_POST['email']) && isset($_POST['name']) && isset($_POST['text'])) {
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="">
 
 <?php require_once 'sectionHead.php' ?>
 
@@ -59,15 +67,15 @@ if (isset($_POST['email']) && isset($_POST['name']) && isset($_POST['text'])) {
                         <div class="form-group">
                             <label for="email">Email:</label>
                             <input class="form-control" type="email" id="email" name="email" required>
-                        <div>
+                        </div>
                         <div class="form-group">
                             <label for="name">Name:</label>
                             <input class="form-control" type="text" id="name" name="name" required>
-                        <div>
+                        </div>
                         <div class="form-group">
                             <label for="text">Text:</label>
                             <textarea class="form-control" id="text" name="text" required></textarea>
-                        <div>
+                        </div>
                         <button type="submit" class="btn btn-primary">Отправить</button>
                     </form>
 
@@ -82,27 +90,32 @@ if (isset($_POST['email']) && isset($_POST['name']) && isset($_POST['text'])) {
 
     <div class="card card-primary">
         <div class="card-header bg-body-secondary text-dark">
-            Сomments
+            <p>Сomments</p>
         </div>
         <div class="card-body">
             <div class="row">
                 <div class="col-sm-6">
                     <!-- TODO: render guestBook comments   -->
                     <?php
-                    if (file_exists('comments.csv')) {
-                        $file = fopen('comments.csv', 'r');
-                        $jsonStrings = file('comments.csv');
-
-                        foreach ($jsonStrings as $jsonString) {
-                            $comment = json_decode($jsonString, true);
-
-                            echo '<div class="comment">';
-                            echo '<p>' . $comment['text'] . '</p>';
-                            echo '<p>By ' . $comment['name'] . ' (' . $comment['email'] . ')</p>';
-                            echo '</div>';
-                        }
-
-                        fclose($file);
+                    // TODO in HTML part
+                    // Получение всех комментарий из базы данных
+                    $aConfig = require_once 'config.php';
+                    $db = mysqli_connect(
+                        $aConfig['host'],
+                        $aConfig['user'],
+                        $aConfig['pass'],
+                        $aConfig['name']
+                    );
+                    $query = 'SELECT * FROM comments';
+                    $dbResponse = mysqli_query($db, $query);
+                    $aComments = mysqli_fetch_all($dbResponse, MYSQLI_ASSOC);
+                    mysqli_close($db);
+                    foreach($aComments as $comment) {
+                        echo $comment['name'] . '<br>';
+                        echo $comment['email'] . '<br>';
+                        echo $comment['text'] . '<br>';
+                        echo $comment['date'] . '<br>';
+                        echo '<hr>';
                     }
                     ?>
 
@@ -112,6 +125,5 @@ if (isset($_POST['email']) && isset($_POST['name']) && isset($_POST['text'])) {
     </div>
 
 </div>
-
 </body>
 </html>
